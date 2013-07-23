@@ -26,10 +26,6 @@ void reduction_gold(float* odata, float* idata, const unsigned int len)
 
 __global__ void reduction(float *g_odata, float *g_idata)
 {
-    // dynamically allocated shared memory
-
-    extern  __shared__  float temp[];
-
     int tid = threadIdx.x;
 
     // first, each thread loads data into shared memory
@@ -57,7 +53,11 @@ __global__ void reduction(float *g_odata, float *g_idata)
 int main( int argc, char** argv) 
 {
   int num_elements, num_threads, mem_size, shared_mem_size;
+<<<<<<< HEAD
   double elapsed, timer;
+=======
+  double timer, elapsed;
+>>>>>>> dev_mem
   float *h_data, *reference, sum;
   float *d_idata, *d_odata;
 
@@ -93,10 +93,17 @@ int main( int argc, char** argv)
   elapsed_time(&timer);
   shared_mem_size = sizeof(float) * num_elements;
   for (int i = 0; i < 1000; ++i)
+<<<<<<< HEAD
 	  reduction<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed = elapsed_time( &timer );
   printf("\n Shared mem took %13.8f \n", elapsed);
+=======
+	  reduction<<<1,num_threads>>>(d_odata,d_idata,scratch);
+  cudaCheckMsg("reduction kernel execution failed");
+  elapsed = elapsed_time(&timer);
+  printf("\n Using device memory took %13.8f \n", elapsed);
+>>>>>>> dev_mem
   // copy result from device to host
 
   cudaSafeCall(cudaMemcpy(h_data, d_odata, sizeof(float),
