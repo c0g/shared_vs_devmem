@@ -92,7 +92,8 @@ int main( int argc, char** argv)
   // execute the kernel
   elapsed_time(&timer);
   shared_mem_size = sizeof(float) * num_elements;
-  reduction<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
+  for (int i = 0; i < 1000; ++i)
+	  reduction<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed = elapsed_time( &timer );
   printf("\n Shared mem took %13.8f \n", elapsed);
