@@ -63,7 +63,7 @@ int main( int argc, char** argv)
 
   cutilDeviceInit(argc, argv);
 
-  num_elements = 512;
+  num_elements = 1024;
   num_threads  = num_elements;
   mem_size     = sizeof(float) * num_elements;
 
