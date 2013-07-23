@@ -1,0 +1,14 @@
+# specify 1 core / 1 GPU to be used
+#BSUB -n 1
+
+# set output and error logs based on job number
+#BSUB -o %J.log
+#BSUB -e %J.err
+
+# specify maximum job time of 1 minute
+#BSUB -W 5:00
+
+# specify queue to be used
+#BSUB -U oxcuda
+
+./reduction 
