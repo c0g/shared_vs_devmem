@@ -109,7 +109,7 @@ int main( int argc, char** argv)
   // execute the kernel
   elapsed_time(&timer);
   shared_mem_size = sizeof(float) * num_elements;
-  for (int i = 0; i < 1000; ++i) 
+  //for (int i = 0; i < 1000; ++i) 
 	  reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed_share = elapsed_time( &timer );
@@ -126,7 +126,7 @@ int main( int argc, char** argv)
 
   cudaSafeCall(cudaMalloc((void**)&d_scratch, mem_size));
   elapsed_time(&timer);
-  for (int i = 0; i < 1000; ++i) 
+  //for (int i = 0; i < 1000; ++i) 
 	  reduction_dev<<<1,num_threads>>>(d_odata,d_idata,d_scratch);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed_dev = elapsed_time(&timer);
