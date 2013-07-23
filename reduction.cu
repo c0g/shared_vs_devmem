@@ -24,7 +24,7 @@ void reduction_gold(float* odata, float* idata, const unsigned int len)
 // GPU routines
 ////////////////////////////////////////////////////////////////////////////////
 
-__global__ void reduction(float *g_odata, float *g_idata, float *scratch)
+__global__ void reduction(float *g_odata, float *g_idata)
 {
     // dynamically allocated shared memory
 
@@ -34,18 +34,18 @@ __global__ void reduction(float *g_odata, float *g_idata, float *scratch)
 
     // first, each thread loads data into shared memory
 
-    scratch[tid] = g_idata[tid];
+    temp[tid] = g_idata[tid];
 
     // next, we perform binary tree reduction
 
     for (int d = blockDim.x>>1; d > 0; d >>= 1) {
       __syncthreads();  // ensure previous step completed 
-      if (tid<d)  scratch[tid] += scratch[tid+d];
+      if (tid<d)  temp[tid] += temp[tid+d];
     }
 
     // finally, first thread puts result into global memory
 
-    if (tid==0) g_odata[0] = scratch[0];
+    if (tid==0) g_odata[0] = temp[0];
 }
 
 
@@ -59,7 +59,7 @@ int main( int argc, char** argv)
   int num_elements, num_threads, mem_size, shared_mem_size;
 
   float *h_data, *reference, sum;
-  float *d_idata, *d_odata, *scratch;
+  float *d_idata, *d_odata;
 
   cutilDeviceInit(argc, argv);
 
@@ -84,7 +84,6 @@ int main( int argc, char** argv)
 
   cudaSafeCall(cudaMalloc((void**)&d_idata, mem_size));
   cudaSafeCall(cudaMalloc((void**)&d_odata, sizeof(float)));
-  cudaSafeCall(cudaMalloc((void**)&scratch, mem_size));
 
   // copy host memory to device input array
 
@@ -93,7 +92,7 @@ int main( int argc, char** argv)
   // execute the kernel
 
   shared_mem_size = sizeof(float) * num_elements;
-  reduction<<<1,num_threads>>>(d_odata,d_idata,scratch);
+  reduction<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
 
   // copy result from device to host
