@@ -57,7 +57,7 @@ __global__ void reduction(float *g_odata, float *g_idata)
 int main( int argc, char** argv) 
 {
   int num_elements, num_threads, mem_size, shared_mem_size;
-
+  double elapsed, timer;
   float *h_data, *reference, sum;
   float *d_idata, *d_odata;
 
@@ -90,11 +90,12 @@ int main( int argc, char** argv)
   cudaSafeCall(cudaMemcpy(d_idata, h_data, mem_size, cudaMemcpyHostToDevice));
 
   // execute the kernel
-
+  elapsed_time(&timer);
   shared_mem_size = sizeof(float) * num_elements;
   reduction<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
-
+  elapsed = elapsed_time( &timer );
+  printf("\n That shit [shared mem] took %13.8f \n", elapsed);
   // copy result from device to host
 
   cudaSafeCall(cudaMemcpy(h_data, d_odata, sizeof(float),
