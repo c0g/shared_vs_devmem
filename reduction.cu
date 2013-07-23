@@ -56,7 +56,7 @@ __global__ void reduction_dev(float *g_odata, float *g_idata, float *scratch)
     // next, we perform binary tree reduction
 
     for (int d = blockDim.x>>1; d > 0; d >>= 1) {
-      __syncthreads();  // ensure previous step completed 
+        __threadfence_block();
       if (tid<d)  scratch[tid] += scratch[tid+d];
     }
 
