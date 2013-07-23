@@ -95,7 +95,7 @@ int main( int argc, char** argv)
   reduction<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed = elapsed_time( &timer );
-  printf("\n That shit [shared mem] took %13.8f \n", elapsed);
+  printf("\n Shared mem took %13.8f \n", elapsed);
   // copy result from device to host
 
   cudaSafeCall(cudaMemcpy(h_data, d_odata, sizeof(float),
