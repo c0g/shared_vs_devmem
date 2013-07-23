@@ -102,16 +102,20 @@ int main( int argc, char** argv)
 
   cudaSafeCall(cudaMalloc((void**)&d_idata, mem_size));
   cudaSafeCall(cudaMalloc((void**)&d_odata, sizeof(float)));
+  cudaSafeCall(cudaMalloc((void**)&d_scratch, mem_size));
 
   // copy host memory to device input array
 
   cudaSafeCall(cudaMemcpy(d_idata, h_data, mem_size, cudaMemcpyHostToDevice));
 
   // execute the kernel
-  elapsed_time(&timer);
   shared_mem_size = sizeof(float) * num_elements;
-  //for (int i = 0; i < 1000; ++i) 
 	  reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
+  cudaCheckMsg("reduction kernel execution failed");
+  //for (int i = 0; i < 1000; ++i) 
+  elapsed_time(&timer);
+	  reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
+	  //reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed_share = elapsed_time( &timer );
   printf("\n Shared memory took %13.8f \n", elapsed_share);
@@ -125,7 +129,8 @@ int main( int argc, char** argv)
 
 
 
-  cudaSafeCall(cudaMalloc((void**)&d_scratch, mem_size));
+	  reduction_dev<<<1,num_threads>>>(d_odata,d_idata,d_scratch);
+  cudaCheckMsg("reduction kernel execution failed");
   elapsed_time(&timer);
   //for (int i = 0; i < 1000; ++i) 
 	  reduction_dev<<<1,num_threads>>>(d_odata,d_idata,d_scratch);
