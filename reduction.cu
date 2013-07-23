@@ -24,8 +24,9 @@ void reduction_gold(float* odata, float* idata, const unsigned int len)
 // GPU routines
 ////////////////////////////////////////////////////////////////////////////////
 
-__global__ void reduction(float *g_odata, float *g_idata)
+__global__ void reduction_shared(float *g_odata, float *g_idata)
 {
+    extern __shared__ float temp[];
     int tid = threadIdx.x;
 
     // first, each thread loads data into shared memory
@@ -44,6 +45,26 @@ __global__ void reduction(float *g_odata, float *g_idata)
     if (tid==0) g_odata[0] = temp[0];
 }
 
+__global__ void reduction_dev(float *g_odata, float *g_idata, float *scratch)
+{
+    int tid = threadIdx.x;
+
+    // first, each thread loads data into shared memory
+
+    scratch[tid] = g_idata[tid];
+
+    // next, we perform binary tree reduction
+
+    for (int d = blockDim.x>>1; d > 0; d >>= 1) {
+      __syncthreads();  // ensure previous step completed 
+      if (tid<d)  scratch[tid] += scratch[tid+d];
+    }
+
+    // finally, first thread puts result into global memory
+
+    if (tid==0) g_odata[0] = scratch[0];
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,13 +74,9 @@ __global__ void reduction(float *g_odata, float *g_idata)
 int main( int argc, char** argv) 
 {
   int num_elements, num_threads, mem_size, shared_mem_size;
-<<<<<<< HEAD
-  double elapsed, timer;
-=======
   double timer, elapsed;
->>>>>>> dev_mem
-  float *h_data, *reference, sum;
-  float *d_idata, *d_odata;
+  float *h_data, *reference, sum, *scratch;
+  float *d_idata, *d_odata, *d_scratch;
 
   cutilDeviceInit(argc, argv);
 
@@ -92,18 +109,33 @@ int main( int argc, char** argv)
   // execute the kernel
   elapsed_time(&timer);
   shared_mem_size = sizeof(float) * num_elements;
-  for (int i = 0; i < 1000; ++i)
-<<<<<<< HEAD
-	  reduction<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
+  for (int i = 0; i < 1000; ++i) 
+	  reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed = elapsed_time( &timer );
-  printf("\n Shared mem took %13.8f \n", elapsed);
-=======
-	  reduction<<<1,num_threads>>>(d_odata,d_idata,scratch);
+  printf("\n Shared memory took %13.8f \n", elapsed);
+  cudaSafeCall(cudaMemcpy(h_data, d_odata, sizeof(float),
+                           cudaMemcpyDeviceToHost));
+
+  // check results
+
+  printf("Shmem reduction error = %f\n",h_data[0]-sum);
+  cudaSafeCall(cudaMalloc((void**)&d_idata, mem_size));
+  cudaSafeCall(cudaMalloc((void**)&d_odata, sizeof(float)));
+  cudaSafeCall(cudaMalloc((void**)&d_scratch, mem_size));
+  scratch = (float*)malloc(mem_size);
+  for(int i = 0; i < num_elements; i++) {
+    scratch[i] = 0.0f;
+    h_data[i] = floorf(1000*(rand()/(float)RAND_MAX));
+  }
+  cudaSafeCall(cudaMemcpy(d_idata, h_data, mem_size, cudaMemcpyHostToDevice));
+  cudaSafeCall(cudaMemcpy(d_scratch, scratch, mem_size, cudaMemcpyHostToDevice));
+  elapsed = elapsed_time(&timer);
+  for (int i = 0; i < 1000; ++i) 
+	  reduction_dev<<<1,num_threads>>>(d_odata,d_idata,d_scratch);
   cudaCheckMsg("reduction kernel execution failed");
   elapsed = elapsed_time(&timer);
-  printf("\n Using device memory took %13.8f \n", elapsed);
->>>>>>> dev_mem
+  printf("\n Device memory took %13.8f \n", elapsed);
   // copy result from device to host
 
   cudaSafeCall(cudaMemcpy(h_data, d_odata, sizeof(float),
@@ -111,7 +143,7 @@ int main( int argc, char** argv)
 
   // check results
 
-  printf("reduction error = %f\n",h_data[0]-sum);
+  printf("Devmem reduction error = %f\n",h_data[0]-sum);
 
   // cleanup memory
 
