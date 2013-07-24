@@ -113,6 +113,7 @@ int main( int argc, char** argv)
   //for (int i = 0; i < 1000; ++i) 
 	  reduction_dev<<<1,num_threads>>>(d_odata,d_idata,d_scratch);
   cudaCheckMsg("reduction kernel execution failed");
+  cudaSafeCall(cudaDeviceSynchronize());
   elapsed_dev = elapsed_time(&timer);
   printf("\n Device memory took %13.8f \n", elapsed_dev);
   // copy result from device to host
@@ -122,29 +123,6 @@ int main( int argc, char** argv)
   printf("Devmem reduction error = %f\n",h_out-sum);
 
 
-
-  // execute the kernel
-  shared_mem_size = sizeof(float) * num_elements;
-	  reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
-  cudaCheckMsg("reduction kernel execution failed");
-  //for (int i = 0; i < 1000; ++i) 
-  elapsed_time(&timer);
-	  reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
-	  //reduction_shared<<<1,num_threads,shared_mem_size>>>(d_odata,d_idata);
-  cudaCheckMsg("reduction kernel execution failed");
-  cudaSafeCall(cudaDeviceSynchronize());
-  elapsed_share = elapsed_time( &timer );
-  printf("\n Shared memory took %13.8f \n", elapsed_share);
-  cudaSafeCall(cudaMemcpy(&h_out, d_odata, sizeof(float),
-                           cudaMemcpyDeviceToHost));
-
-  // check results
-
-  printf("Shmem reduction error = %f\n",h_out-sum);
-
-
-  //print timing difference
-  printf("Using device memory is %3.2f %% of the speed of shared memory \n", 100.0f * elapsed_dev/elapsed_share);
 
 
   // cleanup memory
